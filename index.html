@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI Sales Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Chart.js for charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Moment.js for date handling -->
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- jsPDF for PDF export -->
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+    <!-- Sidebar Toggle Button (Mobile) -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">☰ เมนู</button>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>🛍️ สินค้า</h2>
+            <button class="sidebar-close" onclick="toggleSidebar()">✕</button>
+        </div>
+        <div class="sidebar-content">
+            <button class="sidebar-item active" onclick="filterByProduct('all', this)">
+                📊 ทั้งหมด
+            </button>
+            <button class="sidebar-item" onclick="filterByProduct('โน้ตบุ๊ก', this)">
+                💻 โน้ตบุ๊ก
+            </button>
+            <button class="sidebar-item" onclick="filterByProduct('เมาส์ไร้สาย', this)">
+                🖱️ เมาส์ไร้สาย
+            </button>
+            <button class="sidebar-item" onclick="filterByProduct('คีย์บอร์ด', this)">
+                ⌨️ คีย์บอร์ด
+            </button>
+            <button class="sidebar-item" onclick="filterByProduct('มอนิเตอร์', this)">
+                🖥️ มอนิเตอร์
+            </button>
+            <hr>
+            <h3 style="padding: 10px; color: #64748b; font-size: 0.9rem;">เครื่องมือ</h3>
+            <button class="sidebar-item" onclick="resetAllFilters()">
+                ↻ รีเซ็ตทั้งหมด
+            </button>
+        </div>
+    </aside>
+
+    <div class="wrapper">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>📊 KPI Sales Dashboard</h1>
+                <p>รายงานการขายประจำวัน</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="exportToExcel()">
+                    📥 Export Excel
+                </button>
+                <button class="btn btn-success" onclick="exportToPDF()">
+                    📄 Export PDF
+                </button>
+            </div>
+        </header>
+
+        <!-- Filter Section -->
+        <section class="filter-section">
+            <div class="filter-container">
+                <div class="filter-group">
+                    <label for="startDate">วันที่เริ่มต้น:</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div class="filter-group">
+                    <label for="endDate">วันที่สิ้นสุด:</label>
+                    <input type="date" id="endDate">
+                </div>
+                <div class="filter-group">
+                    <label for="searchProduct">ค้นหาสินค้า:</label>
+                    <input type="text" id="searchProduct" placeholder="ค้นหาชื่อสินค้า...">
+                </div>
+                <div class="filter-actions">
+                    <button class="btn btn-secondary" onclick="applyFilter()">
+                        🔍 ค้นหา
+                    </button>
+                    <button class="btn btn-outline" onclick="resetFilter()">
+                        ↻ รีเซ็ต
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- KPI Cards -->
+        <section class="kpi-cards">
+            <div class="kpi-card">
+                <div class="kpi-icon">💰</div>
+                <div class="kpi-content">
+                    <h3>ยอดขายรวม</h3>
+                    <p id="totalSales" class="kpi-value">฿0.00</p>
+                    <span class="kpi-label">Total Revenue</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">📦</div>
+                <div class="kpi-content">
+                    <h3>จำนวนรายการ</h3>
+                    <p id="totalItems" class="kpi-value">0</p>
+                    <span class="kpi-label">Total Items</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">🎯</div>
+                <div class="kpi-content">
+                    <h3>เฉลี่ยต่อรายการ</h3>
+                    <p id="avgPerItem" class="kpi-value">฿0.00</p>
+                    <span class="kpi-label">Average</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">📈</div>
+                <div class="kpi-content">
+                    <h3>สินค้าชั้นนำ</h3>
+                    <p id="topProduct" class="kpi-value">-</p>
+                    <span class="kpi-label">Best Product</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <div class="chart-container">
+                <div class="chart-wrapper">
+                    <h2>📊 ยอดขายรายวัน</h2>
+                    <canvas id="salesChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <h2>🏆 ผลิตภัณฑ์ชั้นนำ</h2>
+                    <canvas id="productChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table Section -->
+        <section class="table-section">
+            <h2>📋 รายละเอียดข้อมูล</h2>
+            <div class="table-wrapper">
+                <table id="dataTable" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>วันที่</th>
+                            <th>ชื่อสินค้า</th>
+                            <th>หมวดหมู่</th>
+                            <th>จำนวน</th>
+                            <th>ราคาต่อหน่วย</th>
+                            <th>ยอดขาย</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Data will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2026 KPI Sales Dashboard. สร้างวันที่: <span id="currentDate"></span></p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
